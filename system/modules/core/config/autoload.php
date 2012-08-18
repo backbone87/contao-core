@@ -184,6 +184,7 @@ ClassLoader::addClasses(array
 	'Contao\ModuleUser'                => 'system/modules/core/modules/ModuleUser.php',
 
 	// Pages
+	'Contao\Index'                     => 'system/modules/core/library/Contao/Index.php',
 	'Contao\PageError403'              => 'system/modules/core/pages/PageError403.php',
 	'Contao\PageError404'              => 'system/modules/core/pages/PageError404.php',
 	'Contao\PageForward'               => 'system/modules/core/pages/PageForward.php',
