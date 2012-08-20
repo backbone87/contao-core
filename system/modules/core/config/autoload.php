@@ -122,6 +122,7 @@ ClassLoader::addClasses(array
 	'Contao\Folder'                    => 'system/modules/core/library/Contao/Folder.php',
 	'Contao\Idna'                      => 'system/modules/core/library/Contao/Idna.php',
 	'Contao\Image'                     => 'system/modules/core/library/Contao/Image.php',
+	'Contao\Index'                     => 'system/modules/core/library/Contao/Index.php',
 	'Contao\Input'                     => 'system/modules/core/library/Contao/Input.php',
 	'Contao\Message'                   => 'system/modules/core/library/Contao/Message.php',
 	'Contao\Model\Collection'          => 'system/modules/core/library/Contao/Model/Collection.php',
