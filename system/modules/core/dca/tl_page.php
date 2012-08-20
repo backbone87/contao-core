@@ -1178,7 +1178,8 @@ class tl_page extends Backend
 		$arrSet['author'] = $this->User->id;
 		$arrSet['inColumn'] = 'main';
 		$arrSet['title'] = $dc->activeRecord->title;
-		$arrSet['alias'] = $dc->activeRecord->alias;
+		$arrFragments = explode('/', $dc->activeRecord->alias);
+		$arrSet['alias'] = array_pop($arrFragments);
 		$arrSet['published'] = $dc->activeRecord->published;
 
 		$this->Database->prepare("INSERT INTO tl_article %s")->set($arrSet)->execute();
