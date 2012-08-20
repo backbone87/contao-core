@@ -36,6 +36,22 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 			array('tl_page', 'updateSitemap'),
 			array('tl_page', 'generateArticle')
 		),
+		'oncreate_callback' => array
+		(
+			array('tl_page', 'oncreatePage'),
+		),
+		'onrestore_callback' => array
+		(
+			array('tl_page', 'onrestorePage'),
+		),
+		'oncopy_callback' => array
+		(
+			array('tl_page', 'oncopyPage'),
+		),
+		'oncut_callback' => array
+		(
+			array('tl_page', 'oncutPage'),
+		),
 		'sql' => array
 		(
 			'keys' => array
@@ -195,6 +211,10 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 			'sql'                     => "int(10) unsigned NOT NULL default '0'"
 		),
 		'tstamp' => array
+		(
+			'sql'                     => "int(10) unsigned NOT NULL default '0'"
+		),
+		'root' => array
 		(
 			'sql'                     => "int(10) unsigned NOT NULL default '0'"
 		),
@@ -1674,4 +1694,28 @@ class tl_page extends Backend
 
 		$this->createNewVersion('tl_page', $intId);
 	}
+    
+	public function oncreatePage($strTable, $intID, $arrSet, $objDC) {
+		$objParent = $this->getPageDetails($arrSet['pid']);
+		$intRootID = $objParent->type == 'root' ? $objParent->id : $objParent->rootId;
+		$this->Database->prepare(
+			'UPDATE tl_page SET root = ? WHERE id = ?'
+		)->execute($intRootID, $intID);
+	}
+	
+	public function oncopyPage($intID) {
+		$objPM = new \PageMaintenance();
+		$objPM->regeneratePageRoots($intID);
+	}
+	
+	public function oncutPage($objDC) {
+		$objPM = new \PageMaintenance();
+		$objPM->regeneratePageRoots($objDC->id);
+	}
+	
+	public function onrestorePage($intID) {
+		$objPM = new \PageMaintenance();
+		$objPM->regeneratePageRoots($intID);
+	}
+	
 }

@@ -260,7 +260,8 @@ $GLOBALS['TL_MAINTENANCE'] = array
 (
 	'LiveUpdate',
 	'RebuildIndex',
-	'PurgeData'
+	'PurgeData',
+	'PageMaintenance'
 );
 
 
