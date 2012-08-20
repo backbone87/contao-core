@@ -33,6 +33,7 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 		),
 		'onsubmit_callback' => array
 		(
+			array('tl_page', 'checkStartpage'),
 			array('tl_page', 'updateSitemap'),
 			array('tl_page', 'generateArticle')
 		),
@@ -174,7 +175,7 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 	(
 		'__selector__'                => array('type', 'autoforward', 'protected', 'createSitemap', 'includeLayout', 'includeCache', 'includeChmod'),
 		'default'                     => '{title_legend},title,alias,type;followup,start,stop',
-		'regular'                     => '{title_legend},title,alias,type;{meta_legend},pageTitle,robots,description;{protected_legend:hide},protected;{layout_legend:hide},includeLayout;{cache_legend:hide},includeCache;{chmod_legend:hide},includeChmod;{search_legend},noSearch;{expert_legend:hide},cssClass,sitemap,hide,guests;{tabnav_legend:hide},tabindex,accesskey;{publish_legend},published,start,stop',
+		'regular'                     => '{title_legend},title,alias,type,startpage;{meta_legend},pageTitle,robots,description;{protected_legend:hide},protected;{layout_legend:hide},includeLayout;{cache_legend:hide},includeCache;{chmod_legend:hide},includeChmod;{search_legend},noSearch;{expert_legend:hide},cssClass,sitemap,hide,guests;{tabnav_legend:hide},tabindex,accesskey;{publish_legend},published,start,stop',
 		'forward'                     => '{title_legend},title,alias,type;{meta_legend},pageTitle;{redirect_legend},redirect,jumpTo;{protected_legend:hide},protected;{layout_legend:hide},includeLayout;{cache_legend:hide},includeCache;{chmod_legend:hide},includeChmod;{expert_legend:hide},cssClass,sitemap,hide,guests;{tabnav_legend:hide},tabindex,accesskey;{publish_legend},published,start,stop',
 		'redirect'                    => '{title_legend},title,alias,type;{meta_legend},pageTitle;{redirect_legend},redirect,url,target;{protected_legend:hide},protected;{layout_legend:hide},includeLayout;{cache_legend:hide},includeCache;{chmod_legend:hide},includeChmod;{expert_legend:hide},cssClass,sitemap,hide,guests;{tabnav_legend:hide},tabindex,accesskey;{publish_legend},published,start,stop',
 		'root'                        => '{title_legend},title,alias,type;{meta_legend},pageTitle;{dns_legend},dns,staticFiles,staticSystem,staticPlugins,language,fallback;{global_legend:hide},dateFormat,timeFormat,datimFormat,adminEmail;{sitemap_legend:hide},createSitemap;{layout_legend:hide},includeLayout;{cache_legend:hide},includeCache;{chmod_legend:hide},includeChmod;{publish_legend},published,start,stop',
@@ -254,6 +255,14 @@ $GLOBALS['TL_DCA']['tl_page'] = array
 				array('tl_page', 'checkRootType')
 			),
 			'sql'                     => "varchar(32) NOT NULL default ''"
+		),
+		'startpage' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_page']['startpage'],
+			'exclude'                 => true,
+			'inputType'               => 'checkbox',
+			'eval'                    => array('tl_class'=>'clr'),
+			'sql'                     => "char(1) NOT NULL default ''"
 		),
 		'pageTitle' => array
 		(
@@ -1717,6 +1726,14 @@ class tl_page extends Backend
 	public function onrestorePage($intID) {
 		$objPM = new \PageMaintenance();
 		$objPM->regeneratePageRoots($intID);
+	}
+	
+	public function checkStartpage($objDC) {
+		if($objDC->activeRecord->startpage) {
+			$this->Database->prepare(
+				'UPDATE tl_page SET startpage = \'\' WHERE root = ? AND id != ?'
+			)->execute($objDC->activeRecord->root, $objDC->id);
+		}
 	}
 	
 }
