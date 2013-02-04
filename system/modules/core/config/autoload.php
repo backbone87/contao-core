@@ -110,6 +110,7 @@ ClassLoader::addClasses(array
 	'Contao\Database'                  => 'system/modules/core/library/Contao/Database.php',
 	'Contao\Date'                      => 'system/modules/core/library/Contao/Date.php',
 	'Contao\DcaExtractor'              => 'system/modules/core/library/Contao/DcaExtractor.php',
+	'Contao\Dispatcher'                => 'system/modules/core/library/Contao/Dispatcher.php',
 	'Contao\Email'                     => 'system/modules/core/library/Contao/Email.php',
 	'Contao\Encryption'                => 'system/modules/core/library/Contao/Encryption.php',
 	'Contao\Environment'               => 'system/modules/core/library/Contao/Environment.php',

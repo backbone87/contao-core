@@ -42,199 +42,36 @@ class Index extends Frontend
 	 */
 	public function run()
 	{
-		global $objPage;
-		$pageId = $this->getPageIdFromUrl();
-		$objRootPage = null;
-
-		// Load a website root page object if there is no page ID
-		if ($pageId === null)
-		{
-			$objRootPage = $this->getRootPageFromUrl();
-			$objHandler = new $GLOBALS['TL_PTY']['root']();
-			$pageId = $objHandler->generate($objRootPage->id, true);
+		$objDispatcher = \Dispatcher::forCurrentRequest();
+		
+		$objDispatcher->dispatch();
+		
+		$objDispatcher->hasError();
+		$objDispatcher->getError();
+		$objDispatcher->getPage();
+		$objDispatcher->getRootPage();
+		
+		foreach($objDispatcher->getParams() as $strKey => $varValue) {
+			\Input::setGet($strKey, $varValue);
 		}
-		// Throw a 404 error if the request is not a Contao request (see #2864)
-		elseif ($pageId === false)
-		{
-			$this->User->authenticate();
-			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
-			$objHandler->generate($pageId);
-		}
-		// Throw a 404 error if URL rewriting is active and the URL contains the index.php fragment
-		elseif ($GLOBALS['TL_CONFIG']['rewriteURL'] && strncmp(Environment::get('request'), 'index.php/', 10) === 0)
-		{
-			$this->User->authenticate();
-			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
-			$objHandler->generate($pageId);
-		}
-
-		// Get the current page object(s)
-		$objPage = \PageModel::findPublishedByIdOrAlias($pageId);
-
-		// Check the URL and language of each page if there are multiple results
-		if ($objPage !== null && $objPage->count() > 1)
-		{
-			$objNewPage = null;
-			$arrPages = array();
-
-			// Order by domain and language
-			while ($objPage->next())
-			{
-				// Pass the ID so a new page object is created!
-				$objCurrentPage = $this->getPageDetails($objPage->id);
-
-				$domain = $objCurrentPage->domain ?: '*';
-				$arrPages[$domain][$objCurrentPage->rootLanguage] = $objCurrentPage;
-
-				// Also store the fallback language
-				if ($objCurrentPage->rootIsFallback)
-				{
-					$arrPages[$domain]['*'] = $objCurrentPage;
-				}
-			}
-
-			// Look for a root page whose domain name matches the host name
-			if (isset($arrPages[\Environment::get('host')]))
-			{
-				$arrLangs = $arrPages[\Environment::get('host')];
-			}
-			else
-			{
-				$arrLangs = $arrPages['*']; // Empty domain
-			}
-
-			// Try to find a page matching the language parameter
-			if (!$GLOBALS['TL_CONFIG']['addLanguageToUrl'])
-			{
-				$objNewPage = $arrLangs['*']; // Fallback language
-			}
-			elseif (($lang = Input::get('language')) != '' && isset($arrLangs[$lang]))
-			{
-				$objNewPage = $arrLangs[$lang];
-			}
-
-			// Store the page object
-			if (is_object($objNewPage))
-			{
-				$objPage = $objNewPage;
-			}
-		}
-
-		// Throw a 404 error if the page could not be found or the result is still ambiguous
-		if ($objPage === null || ($objPage instanceof \Model\Collection && $objPage->count() != 1))
-		{
-			$this->User->authenticate();
-			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
-			$objHandler->generate($pageId);
-		}
-
-		// Load a website root page object (will redirect to the first active regular page)
-		if ($objPage->type == 'root')
-		{
-			$objHandler = new $GLOBALS['TL_PTY']['root']();
-			$objHandler->generate($objPage->id);
-		}
-
-		// Inherit the settings from the parent pages if it has not been done yet
-		if (!is_bool($objPage->protected))
-		{
-			$objPage = $this->getPageDetails($objPage);
-		}
-
+		\Input::setGet('language', $objDispatcher->getLanguage());
+		
 		// Use the global date format if none is set
-		if ($objPage->dateFormat == '')
-		{
-			$objPage->dateFormat = $GLOBALS['TL_CONFIG']['dateFormat'];
-		}
-		if ($objPage->timeFormat == '')
-		{
-			$objPage->timeFormat = $GLOBALS['TL_CONFIG']['timeFormat'];
-		}
-		if ($objPage->datimFormat == '')
-		{
-			$objPage->datimFormat = $GLOBALS['TL_CONFIG']['datimFormat'];
-		}
-
+		$objPage->dateFormat == '' && $objPage->dateFormat = $GLOBALS['TL_CONFIG']['dateFormat'];
+		$objPage->timeFormat == '' && $objPage->timeFormat = $GLOBALS['TL_CONFIG']['timeFormat'];
+		$objPage->datimFormat == '' && $objPage->datimFormat = $GLOBALS['TL_CONFIG']['datimFormat'];
+		
 		// Set the admin e-mail address
-		if ($objPage->adminEmail != '')
-		{
-			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = $this->splitFriendlyName($objPage->adminEmail);
-		}
-		else
-		{
-			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = $this->splitFriendlyName($GLOBALS['TL_CONFIG']['adminEmail']);
-		}
-
-		// Exit if the root page has not been published (see #2425) and
-		// do not try to load the 404 page! It can cause an infinite loop.
-		if (!BE_USER_LOGGED_IN && !$objPage->rootIsPublic)
-		{
-			header('HTTP/1.1 404 Not Found');
-			die('Page not found');
-		}
-
-		// Check wether the language matches the root page language
-		if ($GLOBALS['TL_CONFIG']['addLanguageToUrl'] && Input::get('language') != $objPage->rootLanguage)
-		{
-			$this->User->authenticate();
-			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
-			$objHandler->generate($pageId);
-		}
-
-		// Check whether there are domain name restrictions
-		if ($objPage->domain != '')
-		{
-			// Load an error 404 page object
-			if ($objPage->domain != Environment::get('host'))
-			{
-				$this->User->authenticate();
-				$objHandler = new $GLOBALS['TL_PTY']['error_404']();
-				$objHandler->generate($objPage->id, $objPage->domain, Environment::get('host'));
-			}
-		}
-
-		// Authenticate the user
-		if (!$this->User->authenticate() && $objPage->protected && !BE_USER_LOGGED_IN)
-		{
-			$objHandler = new $GLOBALS['TL_PTY']['error_403']();
-			$objHandler->generate($pageId, $objRootPage);
-		}
-
-		// Check the user groups if the page is protected
-		if ($objPage->protected && !BE_USER_LOGGED_IN)
-		{
-			$arrGroups = $objPage->groups; // required for empty()
-
-			if (!is_array($arrGroups) || empty($arrGroups) || !count(array_intersect($arrGroups, $this->User->groups)))
-			{
-				$this->log('Page "' . $pageId . '" can only be accessed by groups "' . implode(', ', (array) $objPage->groups) . '" (current user groups: ' . implode(', ', $this->User->groups) . ')', 'Index run()', TL_ERROR);
-
-				$objHandler = new $GLOBALS['TL_PTY']['error_403']();
-				$objHandler->generate($pageId, $objRootPage);
-			}
-		}
-
-		// Load the page object depending on its type
-		$objHandler = new $GLOBALS['TL_PTY'][$objPage->type]();
-
-		switch ($objPage->type)
-		{
-			case 'root':
-			case 'error_404':
-				$objHandler->generate($pageId);
-				break;
-
-			case 'error_403':
-				$objHandler->generate($pageId, $objRootPage);
-				break;
-
-			default:
-				$objHandler->generate($objPage);
-				break;
-		}
-
+		list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = $this->splitFriendlyName(
+			$objPage->adminEmail == '' ? $GLOBALS['TL_CONFIG']['adminEmail'] : $objPage->adminEmail 
+		);
+		
 		// Stop the script (see #4565)
 		exit;
+	}
+	
+	protected function hasAccess() {
+		!$this->User->authenticate();
 	}
 
 
