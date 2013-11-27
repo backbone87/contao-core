@@ -117,7 +117,7 @@ class FilesModel extends \Model
 			$strUuid = \String::uuidToBin($strUuid);
 		}
 
-		return static::findOneBy(array("HEX($t.uuid)=?"), bin2hex($strUuid), $arrOptions);
+		return static::findOneBy(array('BINARY ' . $t . '.uuid = ?'), $strUuid, $arrOptions);
 	}
 
 
@@ -151,7 +151,7 @@ class FilesModel extends \Model
 		}
 
 		return static::findBy(
-			array($t . '.uuid IN (' . rtrim(str_repeat('?,', count($arrUuids)), ',') . ')'),
+			array('BINARY ' . $t . '.uuid IN (' . rtrim(str_repeat('?,', count($arrUuids)), ',') . ')'),
 			$varValue,
 			$arrOptions
 		);
