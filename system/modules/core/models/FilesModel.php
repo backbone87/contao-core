@@ -138,23 +138,23 @@ class FilesModel extends \Model
 
 		$t = static::$strTable;
 
-		foreach ($arrUuids as $k=>$v)
-		{
-			// Convert UUIDs to binary
-			if (strlen($v) == 36)
-			{
-				$v = \String::uuidToBin($v);
-			}
+		$arrUuids = array_map(function($strUuid) {
+			return strlen($strUuid) == 36 ? \String::uuidToBin($strUuid) : $strUuid;
+		}, $arrUuids);
 
-			$arrUuids[$k] = bin2hex($v);
-		}
+		$varValue = array_values($arrUuids);
 
 		if (!isset($arrOptions['order']))
 		{
-			$arrOptions['order'] = \Database::getInstance()->findInSet("HEX($t.uuid)", $arrUuids);
+			$arrOptions['order'] = rtrim(str_repeat($t . '.uuid != ?, ', count($arrUuids)), ', ');
+			$varValue = array_merge($varValue, $varValue);
 		}
 
-		return static::findBy(array("HEX($t.uuid) IN('" . implode("','", $arrUuids) . "')"), null, $arrOptions);
+		return static::findBy(
+			array($t . '.uuid IN (' . rtrim(str_repeat('?,', count($arrUuids)), ',') . ')'),
+			$varValue,
+			$arrOptions
+		);
 	}
 
 
